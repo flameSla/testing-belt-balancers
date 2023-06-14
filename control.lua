@@ -113,7 +113,7 @@ function test_init_all()
 	test_data.combinations_for_inp = brute_force( 1, test_data.max_inp, test_data.max_inp)
 	test_data.combinations_for_out = brute_force( 1, test_data.max_out, test_data.max_out)
 
-	message = #test_data.combinations_for_inp .. "*" .. #test_data.combinations_for_out .. " = " .. #test_data.combinations_for_inp * #test_data.combinations_for_out
+	message = #test_data.combinations_for_inp .. "*" .. #test_data.combinations_for_out .. " = " .. #test_data.combinations_for_inp * #test_data.combinations_for_out .. " combinations"
 	test_print(message)
 	
 	game.write_file(test_data.name_of_log_file, game.table_to_json(test_data.combinations_for_inp) .. "\n", true)
@@ -126,7 +126,7 @@ function test_init_2()
 	test_data.combinations_for_inp = brute_force( 2, 2, test_data.max_inp)
 	test_data.combinations_for_out = brute_force( 2, 2, test_data.max_out)
 
-	message = #test_data.combinations_for_inp .. "*" .. #test_data.combinations_for_out .. " = " .. #test_data.combinations_for_inp * #test_data.combinations_for_out
+	message = #test_data.combinations_for_inp .. "*" .. #test_data.combinations_for_out .. " = " .. #test_data.combinations_for_inp * #test_data.combinations_for_out .. " combinations"
 	test_print(message)
 	
 	game.write_file(test_data.name_of_log_file, game.table_to_json(test_data.combinations_for_inp) .. "\n", true)
