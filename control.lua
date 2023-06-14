@@ -192,18 +192,8 @@ function drum_machine(EventData)
     end
     if test_data.step == 3 then
         -- clear belts
+        -- deleted, there are few benefits, many problems
         test_data.step = 4
-        --local name_to_search = {'transport-belt', 'splitter', 'fast-transport-belt', 'fast-splitter', 'express-transport-belt', 'express-splitter','underground-belt','fast-underground-belt','express-underground-belt'}
-        local name_to_search = {'transport-belt', 'fast-transport-belt', 'express-transport-belt', 'underground-belt','fast-underground-belt','express-underground-belt'}
-        local e=test_data.player.surface.find_entities_filtered{name=name_to_search}
-        local items = 0
-        for _, i in pairs(e) do     
-            items = items + i.get_item_count()
-        end
-        --game.print("items on belts = " .. items)
-        if items == 0 then
-            test_data.step = 4
-        end
     end
     if test_data.step == 4 then
         -- set the configuration of chests
