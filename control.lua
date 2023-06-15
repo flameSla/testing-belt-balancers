@@ -273,7 +273,11 @@ function drum_machine(EventData)
             message = message .. " out:" .. dec_to_bin(test_data.combinations_for_out[test_data.i_out])
             message = message .. " inp_bandwidth: " .. game.table_to_json(test_data.inp_bandwidth)
             message = message .. " out_bandwidth: " .. game.table_to_json(test_data.out_bandwidth)
-            message = message .. "   Throughput: " .. get_full_bandwidth() .. "%"
+            local throughput = get_full_bandwidth()
+            message = message .. "   Throughput: " .. string.format("%.2f", throughput) .. "%"
+            if throughput<100 then
+                message = message .. "\t BAD!!!"
+            end
             test_print(message)
 
             test_data.step = 1
