@@ -68,6 +68,15 @@ function test_print(message)
     game.write_file(test_data.name_of_log_file, message .. "\n", true)
 end
 --//////////////////////////////////////////////////////////////////////////
+function test_print_table(a, text)
+    local message = ""
+    test_print(text)
+    for i=1,#a do
+        message = message .. i .. "-" .. tostring(a[i].unit_number) .. " "
+    end
+    test_print(message)
+end
+--//////////////////////////////////////////////////////////////////////////
 function test_init()
     test_data.inp = {}
     test_data.out = {}
@@ -105,6 +114,10 @@ function test_init()
     local message = "inp: " .. test_data.max_inp .. " out: " .. test_data.max_out
     test_print(message)
 
+    table.sort(test_data.inp, function(a, b) return a.unit_number < b.unit_number end)
+    table.sort(test_data.out, function(a, b) return a.unit_number < b.unit_number end)
+    --test_print_table(test_data.inp, "test_data.inp")
+    --test_print_table(test_data.out, "test_data.out")
 end
 --//////////////////////////////////////////////////////////////////////////
 function test_init_all()
