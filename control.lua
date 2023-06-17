@@ -90,11 +90,9 @@ function test_init()
     test_data.name_of_log_file = "testing-belt-balancers.log"
     test_data.step = 0
     test_data.inp_bandwidth = {}
-    test_data.inp_bandwidth_0 = {}
-    test_data.inp_bandwidth_1 = {}
+    test_data.inp_bandwidth_fifo = {}
     test_data.out_bandwidth = {}
-    test_data.out_bandwidth_0 = {}
-    test_data.out_bandwidth_1 = {}
+    test_data.out_bandwidth_fifo = {}
     local p = game.player
     test_data.player = p
 
@@ -149,6 +147,7 @@ function test_print_the_number_of_combinations()
     message = i .. "*" .. o .. " = " .. combinations .. " combinations (" .. test_get_time(combinations) .. ")"
     test_print(message, true)
 
+    game.write_file(test_data.name_of_log_file, "drum = " .. test_data.starting_value_of_counter .. "\n", true)
     game.write_file(test_data.name_of_log_file, game.table_to_json(test_data.combinations_for_inp) .. "\n", true)
     game.write_file(test_data.name_of_log_file, game.table_to_json(test_data.combinations_for_out) .. "\n", true)
     test_print("")
@@ -183,7 +182,26 @@ function get_full_bandwidth()
     for i = 1, #test_data.out_bandwidth do
         out = out + test_data.out_bandwidth[i]
     end
-    return 100 * (out / inp)
+    return math.min(100 * (out / inp), 100)
+end
+--//////////////////////////////////////////////////////////////////////////
+-- Calculates the arithmetic mean of a set of values
+function test_arithmetic_mean(x)
+    local s = 0
+    for i = 1, #x do
+        s = s + x[i]
+    end
+    return s / #x
+end
+--//////////////////////////////////////////////////////////////////////////
+function test_bandwidth_to_string(a)
+    local result = "["
+    for i = 1, #a do
+        result = result .. "<" .. string.format("%5.1f", a[i]) .. ">"
+    end
+    --result = result:sub(1, -2) .. "]"
+    result = result .. "]"
+    return result
 end
 --//////////////////////////////////////////////////////////////////////////
 -- called once every 60 ticks
@@ -255,26 +273,25 @@ function drum_machine(EventData)
         end
         test_data.inp_contents = get_contents(test_data.inp)
         for i = 1, #test_data.inp_contents do
-            test_data.inp_bandwidth_0[i] = 0
-            test_data.inp_bandwidth_1[i] = 0
+            test_data.inp_bandwidth_fifo[i] = {0, 0, 0, 0}
         end
         test_data.out_contents = get_contents(test_data.out)
         for i = 1, #test_data.out_contents do
-            test_data.out_bandwidth_0[i] = 0
-            test_data.out_bandwidth_1[i] = 0
+            test_data.out_bandwidth_fifo[i] = {0, 0, 0, 0}
         end
-        -- maximum of 600 calls for the test
+        -- maximum of 599 calls for the test
+        -- (599 is better than 600 for averaging)
         -- it is necessary if there are no belts between the entrance and exit
-        test_data.count = test_data.starting_value_of_counter or 600
+        test_data.count = test_data.starting_value_of_counter or 599
         test_data.step = 5
     elseif test_data.step == 5 then
         -- bandwidth calculation
         test_data.count = test_data.count - 1
         local temp = get_contents(test_data.out)
         for i = 1, #temp do
-            test_data.out_bandwidth_0[i] = test_data.out_bandwidth_1[i]
-            test_data.out_bandwidth_1[i] = temp[i] - test_data.out_contents[i]
-            test_data.out_bandwidth[i] = (test_data.out_bandwidth_0[i] + test_data.out_bandwidth_1[i]) / 2
+            table.remove(test_data.out_bandwidth_fifo[i], 1)
+            table.insert(test_data.out_bandwidth_fifo[i], temp[i] - test_data.out_contents[i])
+            test_data.out_bandwidth[i] = test_arithmetic_mean(test_data.out_bandwidth_fifo[i])
         end
         test_data.out_contents = temp
 
@@ -284,9 +301,9 @@ function drum_machine(EventData)
             if temp[i] < 1000 then
                 empty_chest_counter = empty_chest_counter + 1
             end
-            test_data.inp_bandwidth_0[i] = test_data.inp_bandwidth_1[i]
-            test_data.inp_bandwidth_1[i] = temp[i] - test_data.inp_contents[i]
-            test_data.inp_bandwidth[i] = (test_data.inp_bandwidth_0[i] + test_data.inp_bandwidth_1[i]) / 2
+            table.remove(test_data.inp_bandwidth_fifo[i], 1)
+            table.insert(test_data.inp_bandwidth_fifo[i], temp[i] - test_data.inp_contents[i])
+            test_data.inp_bandwidth[i] = test_arithmetic_mean(test_data.inp_bandwidth_fifo[i])
         end
         test_data.inp_contents = temp
         --game.print("inp_bandwidth: " .. game.table_to_json(test_data.inp_bandwidth))
@@ -295,12 +312,14 @@ function drum_machine(EventData)
             local message = ""
             message = message .. " inp:" .. dec_to_bin(test_data.combinations_for_inp[test_data.i_inp])
             message = message .. " out:" .. dec_to_bin(test_data.combinations_for_out[test_data.i_out])
-            message = message .. " inp_bandwidth: " .. game.table_to_json(test_data.inp_bandwidth)
-            message = message .. " out_bandwidth: " .. game.table_to_json(test_data.out_bandwidth)
+            message = message .. " inp_bandwidth: " .. test_bandwidth_to_string(test_data.inp_bandwidth)
+            message = message .. " out_bandwidth: " .. test_bandwidth_to_string(test_data.out_bandwidth)
             local throughput = get_full_bandwidth()
             message = message .. "   Throughput: " .. string.format("%.2f", throughput) .. "%"
-            message = message .. ((throughput < 100) and "\t BAD!!!" or "")
+            message = message .. ((throughput ~= 100) and "\t BAD!!!" or "")
             test_print(message)
+            --game.print(game.table_to_json(test_data.inp_bandwidth_fifo))
+            --game.print(game.table_to_json(test_data.out_bandwidth_fifo))
 
             test_data.step = 1
         end
