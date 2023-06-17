@@ -93,7 +93,8 @@ function test_init()
     test_data.inp_bandwidth_fifo = {}
     test_data.out_bandwidth = {}
     test_data.out_bandwidth_fifo = {}
-    local p = game.player
+    test_data.n = test_data.n or 0
+    local p = game.player or test_data.player
     test_data.player = p
 
     local e = p.surface.find_entities_filtered {name = "chest-source-for-testing"}
@@ -165,6 +166,12 @@ function test_init_2()
     test_data.combinations_for_out = brute_force(2, 2, test_data.max_out)
 end
 --//////////////////////////////////////////////////////////////////////////
+function test_init_n(n)
+    test_print("test_init_" .. tostring(n), true)
+    test_data.combinations_for_inp = brute_force(n, n, test_data.max_inp)
+    test_data.combinations_for_out = brute_force(n, n, test_data.max_out)
+end
+--//////////////////////////////////////////////////////////////////////////
 -- get the contents of all chests
 function get_contents(a)
     local result = {}
@@ -224,10 +231,7 @@ function drum_machine(EventData)
             test_data.i_inp = test_data.i_inp + 1
             if test_data.i_inp > #test_data.combinations_for_inp then
                 -- all options are checked
-                script.on_nth_tick(EventData.nth_tick, nil)
-                game.speed = 1
                 test_data.step = 255
-                game.print("Testing completed")
                 return
             end
         end
@@ -324,6 +328,51 @@ function drum_machine(EventData)
             test_data.step = 1
         end
     end
+    if test_data.step == 255 then
+        if test_data.n <= 0 then
+            -- all options are checked
+            script.on_nth_tick(EventData.nth_tick, nil)
+            game.speed = 1
+            test_data.step = 256
+            game.print("Testing completed")
+            return
+        else
+            test_init()
+            test_init_n(test_data.n)
+            test_print_the_number_of_combinations()
+
+            test_data.n = test_data.n - 1
+            test_data.step = 0
+        end
+    end
+end
+--//////////////////////////////////////////////////////////////////////////
+function factorial(n)
+    if n <= 0 then
+        return 1
+    else
+        return n * factorial(n - 1)
+    end
+end
+
+function k_combinations(k, n)
+    local res = factorial(n) / (factorial(k) * factorial(n - k))
+    return res
+end
+--//////////////////////////////////////////////////////////////////////////
+function test_print_the_number_of_n_combinations(n, number_of_bits)
+    test_print("************************************", true)
+    test_print("test_init_n-all", true)
+    test_print("************************************", true)
+
+    local combinations = 0
+    for i = 1, n do
+        combinations = combinations + k_combinations(i, number_of_bits) ^ 2
+    end
+
+    local message = combinations .. " combinations"
+    test_print(message, true)
+    test_print("")
 end
 --//////////////////////////////////////////////////////////////////////////
 script.on_init(
@@ -359,6 +408,22 @@ function processing_commands(event)
         test_init()
         test_init_2()
         test_print_the_number_of_combinations()
+    end
+    local res = string.match(parameter, "init.n=")
+    if res ~= nil then
+        test_init()
+        local par = "n="
+        local res = string.match(parameter, par)
+        if res ~= nil then
+            res = string.match(parameter, par .. "%d+")
+            res = string.gsub(res, par, "")
+            res = tonumber(res)
+            test_data.n = res
+        end
+        test_data.n = math.min(test_data.n, test_data.max_inp, test_data.max_out)
+        test_print_the_number_of_n_combinations(test_data.n, test_data.n)
+        game.print("n = " .. tostring(test_data.n))
+        test_data.step = 255
     end
     local res = string.match(parameter, "start")
     if res ~= nil then
